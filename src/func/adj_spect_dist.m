@@ -25,8 +25,8 @@ end
 Va = diag(Va);
 Vb = diag(Vb);
 
-Va = sort(Va,'ascend');
-Vb = sort(Vb,'ascend');
+Va = sort(Va,'descend');
+Vb = sort(Vb,'descend');
 
 Dab = pdist([Va' ; Vb'],'minkowski',minkp) ;
 
