@@ -272,12 +272,15 @@ sz_by_group = parcellate_lab(ssheet.log10_BrV_,spord.vec) ;
 [ss,sIdx] = sort(sz_by_group,'ascend') ; 
 [ss2,sortAniGroups] = sort(sIdx) ; 
 
-ac = flipud(brewermap(max(spord.vec),'spectral')) ;
+% ac = flipud(brewermap(max(spord.vec),'YlOrBr')) ;
+% ac = (brewermap(max(spord.vec),'YlOrBr')) ;
+ac = copper(max(spord.vec)) ;
 
 anicmap = ac(sortAniGroups,:) ; 
 
 fcn_boxpts(ssheet.log10_BrV_,spord.vec,anicmap,0,spord.cat) 
 ylabel('Log_{10} Brain Volume')
+
 
 ff = [ PROJ_DIR '/reports/figures/order_sizes.pdf' ] ;
 print(gcf(),'-dpdf',ff);
@@ -285,6 +288,40 @@ close all
 
 ff = [ PROJ_DIR '/reports/figures/animal_colors.mat' ] ;
 save(ff,'anicmap','sortAniGroups')
+
+%% also make an SNR plot
+
+% fcn_boxpts(ssheet.SNR,spord.vec,anicmap,0,spord.cat) 
+% ylabel('SNR')
+
+f = figure(...
+    'units','inches',...
+    'position',[0,0,8,8],...
+    'paperpositionmode','auto');
+
+hold on
+for idx = 1:max(spord.vec)
+%         s(idx) = scatter(0,0,0.1,anicmap(idx,:),'filled') ;
+    nice_scatter(ssheet.log10_BrV_(spord.vec==idx),...
+        ssheet.SNR(spord.vec==idx),200,anicmap(idx,:)) 
+
+end
+
+[r,p] = corr(ssheet.log10_BrV_,ssheet.SNR,'type','s') ;
+
+% text(0.7,0.92,[ '\rho: ' num2str(round(r,3)) ...
+%     ', \it{p}' '-value: ' num2str(round(p,3)) ], ...
+%     'Units','normalized')
+
+lgd = legend(spord.cat,'NumColumns',2,...
+    'Location','northwest') ;
+
+ylabel('SNR')
+xlabel('Log_{10} Brain Volume (mm^3)')
+
+ff = [ PROJ_DIR '/reports/figures/order_snr.pdf' ] ;
+print(gcf(),'-dpdf',ff);
+close all
 
 %% do the gen parameter plots
 
@@ -341,6 +378,13 @@ end
 
 %% now do the extended ttest figure
 
+distlist = {'bin-gen-max' 'bin-gen-mean' 'wei-gen-max' 'wei-gen-mean' ...
+    'lap-spec-full' 'lap-spec-5' 'lap-spec-50' 'lap-spec-100' ...
+    'lapspec-js' ...
+    'adj-spec-full' 'adj-spec-5' 'adj-spec-50' 'adj-spec-100' ...
+    'wei-netsimile' 'bin-netsimile' 'net-pd' ...
+    } ;
+
 for tdx = 1:4
     
 %     % load the phy distacnes
@@ -353,6 +397,9 @@ for tdx = 1:4
     selVec = ~divo.outliers_thr_nonan(:,tdx ) ;
     divMat = divo.animal_div_mat(:,:,tdx) ;
     netdMat = divMat(selVec,selVec) ;
+    
+    % gree colors 
+    cc = brewermap(4,'Paired') ;
     
     trilmask = logical(tril(ones(size(netdMat,1)))) ;
 %     triumask = logical(tril(ones(size(netdMat,1)),1)) ;
@@ -375,22 +422,58 @@ for tdx = 1:4
     
     withinvec = [] ;
     btwnvec = [] ;
+   
+    f = figure(...
+        'units','inches',...
+        'position',[0,0,10,10],...
+        'paperpositionmode','auto');
+
+    ts = tight_subplot(4,4,0.05) ;
     
     for idx = 1:ndist
 
         rr = ranktrnsf_und(distMats(idx).mat) ;
         
+        [~,bmuntrns] = get_block_mat(distMats(idx).mat,spord.vec) ;
+        
         [~,bm] = get_block_mat(rr,spord.vec) ;
 
         nnn = isnan(sum(bm,2)) ;
         bm = bm(~nnn,~nnn) ; 
+        bmuntrns = bmuntrns(~nnn,~nnn) ;
         
         withinvec = [ withinvec(:) ; diag(bm) ] ;
         btwnvec = [ btwnvec(:) ; triunroll(bm) ] ; 
         
+        %% for the tight scatter
+        axes(ts(idx))
+        b1 = diag(bmuntrns) ; 
+        b2 = triunroll(bmuntrns) ;
+        
+        fcn_boxpts([b1 ; b2], [ ones(length(b1),1) ; ones(length(b2),1)*2 ], ...
+            cc(3:4,:),0,{ 'Within' 'Between' })
+
+        title(distlist{idx})
+
+        uuu = ranksum(b1,b2,'tail','left') ;
+        text(1.04,0.03,...
+            ['\it{p}-value: ' num2str(round(uuu,3))], ...
+            'Rotation',90, ...
+            'Units','normalized')
+        
+        
     end
     
-    cc = brewermap(4,'Paired') ;
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % save the figure
+    ff = [ odir 'alldistshown_btwn_boxplot_thr' num2str(thr_vals(tdx)) '.pdf' ] ;
+    print(gcf(),'-dpdf',ff,'-bestfit');
+    close all
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+    close all    
+    
+    %% all in one plot
+    
     fcn_boxpts([withinvec ; btwnvec], [ ones(length(withinvec),1) ; ones(length(btwnvec),1)*2 ], ...
     cc(3:4,:),0,{ 'Within' 'Between' })
 

@@ -29,8 +29,9 @@ cmapdark(cmapdark < 0) = 0;
 pointSZ = 100 ;
 
 % f = fcn_rickplot([2,2,4,2]);
-ax = axes;
-hold(ax,'on');
+% ax = axes;
+% hold(ax,'on');
+hold on
 
 u = unique(lab);
 
@@ -75,5 +76,8 @@ end
 set(gca,...
     'xlim',[-2*wid + 1,length(u) + 2*wid],...
     'ylim',[min(x) - 0.05*range(x),max(x) + 0.05*range(x)]);
+set(gca,'YTickLabelMode','auto')
+
 set(gca,...
     'xtick',1:length(u),'xticklabel',names);
+hold off
