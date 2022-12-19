@@ -323,6 +323,55 @@ ff = [ PROJ_DIR '/reports/figures/order_snr.pdf' ] ;
 print(gcf(),'-dpdf',ff);
 close all
 
+%% also do a density plot
+
+% get densities from unthresholded data
+
+filename = [ DD_INTERM '/con_mat_gn_repani_stack_thr' num2str(thr_vals(1)) '_.mat' ] ;
+ll = load(filename) ; 
+ssheet = ll.newsheet ;
+filename = [ DD_PROC '/species_order_thr' num2str(thr_vals(1)) '.mat' ] ;
+load(filename) ;
+
+ff = [ PROJ_DIR '/reports/figures/animal_colors.mat' ] ;
+save(ff,'anicmap','sortAniGroups')
+
+numA = size(ll.data,3) ;
+dens = zeros(numA,1) ;
+for idx = 1:numA
+    dens(idx) = density_und(ll.data(:,:,idx)) ; 
+end
+
+
+f = figure(...
+    'units','inches',...
+    'position',[0,0,8,8],...
+    'paperpositionmode','auto');
+
+hold on
+for idx = 1:max(spord.vec)
+%         s(idx) = scatter(0,0,0.1,anicmap(idx,:),'filled') ;
+    nice_scatter(ssheet.log10_BrV_(spord.vec==idx),...
+        dens(spord.vec==idx),200,anicmap(idx,:)) 
+
+end
+
+[r,p] = corr(ssheet.log10_BrV_,dens,'type','s') ;
+
+text(0.7,0.92,[ '\rho: ' num2str(round(r,3)) ...
+    ', \it{p}' '-value: ' num2str(round(p,3)) ], ...
+    'Units','normalized')
+
+lgd = legend(spord.cat,'NumColumns',2,...
+    'Location','northwest') ;
+
+ylabel('Density')
+xlabel('Log_{10} Brain Volume (mm^3)')
+
+ff = [ PROJ_DIR '/reports/figures/order_density.pdf' ] ;
+print(gcf(),'-dpdf',ff);
+close all
+
 %% do the gen parameter plots
 
 for tdx = 1:4
